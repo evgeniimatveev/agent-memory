@@ -2,8 +2,16 @@
 
 A small, self-hosted long-term memory layer for AI agents — mem0 / Supermemory style — built entirely on Cloudflare's free tier plus Claude Haiku 4.5.
 
-**Live demo:** [evgeniimatveev.github.io/agent-memory](https://evgeniimatveev.github.io/agent-memory/)
-**API:** `https://evgeniimatveev-agent-memory.evgeniimatveevusa.workers.dev`
+**[Live Demo →](https://evgeniimatveev.github.io/agent-memory/)**
+
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Vectorize](https://img.shields.io/badge/Vectorize-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Workers AI](https://img.shields.io/badge/Workers_AI-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![D1](https://img.shields.io/badge/D1_Database-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Claude API](https://img.shields.io/badge/Claude_API-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
+![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=for-the-badge&logo=github&logoColor=white)
+
+**API base:** `https://evgeniimatveev-agent-memory.evgeniimatveevusa.workers.dev`
 
 ## What it does
 
@@ -15,19 +23,23 @@ Most RAG demos embed-and-search a fixed corpus. This is different: it's a *write
 
 ## Architecture
 
-```
-POST /remember { text, source? }
-  → Claude Haiku 4.5 extracts facts (JSON)
-  → each fact embedded (Workers AI bge-m3)
-  → stored in Vectorize (vector) + D1 (metadata)
+```mermaid
+flowchart LR
+    U1(["you: /remember"]) -->|"raw text"| W["Cloudflare Worker<br/>agent-memory"]
+    W -->|"extract atomic facts"| C["Claude Haiku 4.5"]
+    C -->|"facts: type + importance"| W
+    W -->|"embed each fact"| AI["Workers AI<br/>bge-m3"]
+    AI --> V[("Vectorize<br/>fact embeddings")]
+    W --> D[("D1<br/>type / importance / timestamps")]
 
-POST /recall { query, limit? }
-  → query embedded
-  → Vectorize top-K candidates
-  → joined against D1 for importance / created_at
-  → re-ranked: score = similarity × (0.6 + 0.08×importance) × max(0.4, e^(-age_days/30))
-  → top N returned, last_accessed_at touched
+    U2(["you: /recall"]) -->|"query"| W
+    W -.->|"embed query"| AI
+    V -.->|"top-K candidates"| W
+    D -.->|"join: importance + created_at"| W
+    W -->|"re-rank: similarity × importance × recency"| R(["ranked facts"])
 ```
+
+`/remember` is the write path (top), `/recall` is the read path (bottom) — both share the same Worker, embedding model, Vectorize index and D1 table; nothing is duplicated per-endpoint.
 
 | Component | Role |
 |---|---|

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>agent-memory — a mem0-style memory layer for AI agents</title>
+<style>
+  :root {
+    --bg: #0d0f16;
+    --panel: #161923;
+    --border: #262b3a;
+    --text: #e6e8f0;
+    --muted: #8a92a8;
+    --accent: #7aa2f7;
+    --accent-2: #9ece6a;
+    --warn: #e0af68;
+    --danger: #f7768e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 20px 16px;
+    text-align: center;
+  }
+  header h1 { font-size: 1.9rem; margin-bottom: 8px; }
+  header p { color: var(--muted); max-width: 600px; margin: 0 auto; }
+  header a { color: var(--accent); }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+    display: grid;
+    gap: 24px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .panel h2 { margin-top: 0; font-size: 1.15rem; }
+  .panel h2 .tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag.remember { background: rgba(122,162,247,0.15); color: var(--accent); }
+  .tag.recall { background: rgba(158,206,106,0.15); color: var(--accent-2); }
+  textarea, input[type=text] {
+    width: 100%;
+    background: #0d0f16;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+  }
+  textarea { min-height: 90px; }
+  button {
+    margin-top: 10px;
+    background: var(--accent);
+    color: #0d0f16;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .results { margin-top: 16px; display: grid; gap: 10px; }
+  .fact-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #12141d;
+  }
+  .fact-card .meta {
+    display: flex;
+    gap: 10px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .fact-card .meta span { white-space: nowrap; }
+  .type-pill {
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .type-fact { background: rgba(122,162,247,0.15); color: var(--accent); }
+  .type-preference { background: rgba(158,206,106,0.15); color: var(--accent-2); }
+  .type-event { background: rgba(224,175,104,0.15); color: var(--warn); }
+  .type-correction { background: rgba(247,118,142,0.15); color: var(--danger); }
+  .empty-note { color: var(--muted); font-size: 0.9rem; }
+  .example-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .example-row button {
+    margin-top: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 0.78rem;
+    padding: 5px 10px;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding-bottom: 40px;
+  }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧠 agent-memory</h1>
+  <p>
+    A small self-hosted, mem0/Supermemory-style long-term memory layer for AI agents —
+    extracts atomic facts from text, embeds them, and retrieves them ranked by
+    relevance, importance and recency. Built on Cloudflare Vectorize + Workers AI + D1 + Claude Haiku 4.5.
+    <br><a href="https://github.com/evgeniimatveev/agent-memory" target="_blank">Source on GitHub →</a>
+  </p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Teach it something <span class="tag remember">POST /remember</span></h2>
+    <p class="empty-note">Paste a few sentences — it extracts the atomic, memorable facts (not the whole blob) and stores them.</p>
+    <textarea id="rememberInput" placeholder="e.g. I'm a data analyst based in Los Angeles. I prefer DuckDB over plain PostgreSQL for local analytics because it's faster for OLAP queries."></textarea>
+    <div class="example-row">
+      <button type="button" onclick="fillExample()">Use example text</button>
+    </div>
+    <br>
+    <button id="rememberBtn" onclick="doRemember()">Remember</button>
+    <div id="rememberResults" class="results"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Ask it something <span class="tag recall">POST /recall</span></h2>
+    <p class="empty-note">Query in plain language — results are ranked by semantic similarity × importance × recency, not similarity alone.</p>
+    <input type="text" id="recallInput" placeholder="e.g. where does this person live and what tools do they prefer?">
+    <br>
+    <button id="recallBtn" onclick="doRecall()">Recall</button>
+    <div id="recallResults" class="results"></div>
+  </section>
+</main>
+
+<footer>
+  Personal portfolio project by <a href="https://github.com/evgeniimatveev" target="_blank">evgeniimatveev</a> —
+  demo data is public and may be periodically cleared. Not for real personal/sensitive data.
+</footer>
+
+<script>
+const API = "https://evgeniimatveev-agent-memory.evgeniimatveevusa.workers.dev";
+
+function fillExample() {
+  document.getElementById("rememberInput").value =
+    "I'm a data analyst based in Los Angeles. I prefer DuckDB over plain PostgreSQL for local analytics because it's faster for OLAP queries. Correction: actually I just moved to Los Angeles from Burbank last month.";
+}
+
+function typePill(type) {
+  return `<span class="type-pill type-${type}">${type}</span>`;
+}
+
+async function doRemember() {
+  const btn = document.getElementById("rememberBtn");
+  const input = document.getElementById("rememberInput").value.trim();
+  const out = document.getElementById("rememberResults");
+  if (!input) return;
+  btn.disabled = true;
+  out.innerHTML = `<p class="empty-note">Extracting facts…</p>`;
+  try {
+    const res = await fetch(`${API}/remember`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: input, source: "web-demo" }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      out.innerHTML = `<p class="empty-note">Error: ${data.error}</p>`;
+    } else if (data.count === 0) {
+      out.innerHTML = `<p class="empty-note">Nothing memorable found in that text.</p>`;
+    } else {
+      out.innerHTML = data.stored
+        .map(
+          (f) => `<div class="fact-card">${f.text}
+            <div class="meta">${typePill(f.type)} <span>importance ${f.importance}/5</span></div></div>`
+        )
+        .join("");
+    }
+  } catch (e) {
+    out.innerHTML = `<p class="empty-note">Request failed — try again.</p>`;
+  }
+  btn.disabled = false;
+}
+
+async function doRecall() {
+  const btn = document.getElementById("recallBtn");
+  const query = document.getElementById("recallInput").value.trim();
+  const out = document.getElementById("recallResults");
+  if (!query) return;
+  btn.disabled = true;
+  out.innerHTML = `<p class="empty-note">Searching memory…</p>`;
+  try {
+    const res = await fetch(`${API}/recall`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      out.innerHTML = `<p class="empty-note">Error: ${data.error}</p>`;
+    } else if (!data.results || data.results.length === 0) {
+      out.innerHTML = `<p class="empty-note">No matching memories yet — teach it something first.</p>`;
+    } else {
+      out.innerHTML = data.results
+        .map(
+          (r) => `<div class="fact-card">${r.text}
+            <div class="meta">${typePill(r.type)}
+              <span>importance ${r.importance}/5</span>
+              <span>similarity ${r.similarity}</span>
+              <span>${r.age_days}d old</span>
+              <span>final score ${r.score}</span>
+            </div></div>`
+        )
+        .join("");
+    }
+  } catch (e) {
+    out.innerHTML = `<p class="empty-note">Request failed — try again.</p>`;
+  }
+  btn.disabled = false;
+}
+</script>
+
+</body>
+</html>

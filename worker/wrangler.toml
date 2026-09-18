@@ -1,0 +1,23 @@
+name = "evgeniimatveev-agent-memory"
+main = "worker.js"
+compatibility_date = "2026-09-17"
+
+kv_namespaces = [
+  { binding = "RATE_LIMIT", id = "5dc7f5b7519e49a1b69292967660c0b3" }
+]
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "evgeniimatveev-memory-corpus"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "evgeniimatveev-memory-db"
+database_id = "6bf3c424-7d4a-4896-8a4b-e6eb50747630"
+
+[ai]
+binding = "AI"
+
+# Secrets (set via `wrangler secret put <NAME>`, not stored here):
+#   ANTHROPIC_API_KEY — Anthropic API key used for fact extraction
+#   ADMIN_KEY          — internal token gating /admin/* routes (stats reset, etc.)

@@ -39,6 +39,10 @@ POST /recall { query, limit? }
 
 Same Cloudflare stack as [civics-sql-rag](https://github.com/evgeniimatveev/civics-sql-rag) (this developer's earlier RAG project) — reused deliberately rather than re-deriving the pattern.
 
+## Known limitation
+
+**Vectorize indexing lag.** A freshly-`remember`ed fact isn't always immediately queryable — Cloudflare indexes new vectors asynchronously, and this can take anywhere from a few seconds to roughly a minute. `/recall` right after `/remember` may briefly return `considered: 0` for facts that were just stored. This is Vectorize's own eventual-consistency behavior (confirmed via `wrangler vectorize info`, watching `vectorCount` lag behind actual upserts), not a bug in this app — retrying the same query a little later resolves it every time.
+
 ## Design decisions worth calling out
 
 - **Conflict resolution is intentionally v1-scoped out.** The schema has a `superseded_by` column and the `correction` fact type is already extracted and flagged — but automatically deciding "does this new fact contradict/replace an old one" needs its own LLM-judge pass, which is a distinct v2 feature, not bolted onto the write path for a first release.

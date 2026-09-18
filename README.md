@@ -7,7 +7,7 @@ A small, self-hosted long-term memory layer for AI agents — mem0 / Supermemory
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Vectorize](https://img.shields.io/badge/Vectorize-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Workers AI](https://img.shields.io/badge/Workers_AI-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
-![D1](https://img.shields.io/badge/D1_Database-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![D1](https://img.shields.io/badge/D1_Database-4B5563?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![Claude API](https://img.shields.io/badge/Claude_API-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
 ![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=for-the-badge&logo=github&logoColor=white)
 

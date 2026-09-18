@@ -11,7 +11,7 @@ A small, self-hosted long-term memory layer for AI agents — mem0 / Supermemory
 ![Claude API](https://img.shields.io/badge/Claude_API-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
 ![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=for-the-badge&logo=github&logoColor=white)
 
-**API base:** `https://evgeniimatveev-agent-memory.evgeniimatveevusa.workers.dev`
+**API base:** `https://evgeniimatveev-agent-memory.evgeniimatveevusa.workers.dev` · [live stats →](https://evgeniimatveev-agent-memory.evgeniimatveevusa.workers.dev/stats)
 
 ## What it does
 

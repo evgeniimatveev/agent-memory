@@ -1,0 +1,23 @@
+name: Files check
+
+# Automatic and light: no Cloudflare, no network.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@v7
+      - name: worker.js is valid JavaScript, schema parses, no secret in wrangler.toml, README endpoints and limits match the code
+        run: uv run --no-project --python 3.12 --with sqlglot python .github/scripts/check_repo.py
